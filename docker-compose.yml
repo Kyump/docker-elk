@@ -14,12 +14,33 @@ services:
   elasticsearch:
     build:
       context: elasticsearch/
+    container_name: elasticsearch-1
     volumes:
-      # - elastic-data:/usr/share/elasticsearch/data
+      - elastic-data-1:/usr/share/elasticsearch/data
       - ${CONFIG_ROOT_FOLDER}/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     ports:
-      - "9200-9202:9200"
-      - "9300-9302:9300"
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      # use 'zen' discovery plugin
+      discovery.type: zen
+      # use internal Docker round-robin DNS for unicast discovery
+      discovery.zen.ping.unicast.hosts: elasticsearch
+      ES_JAVA_OPTS: "-Xmx512m -Xms512m"
+      ELASTIC_PASSWORD: changeme
+
+  elasticsearch2:
+    build:
+      context: elasticsearch/
+    container_name: elasticsearch-2
+    depends_on:
+      - elasticsearch
+    volumes:
+      - elastic-data-2:/usr/share/elasticsearch/data
+      - ${CONFIG_ROOT_FOLDER}/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - "9201:9200"
+      - "9301:9300"
     environment:
       # use 'zen' discovery plugin
       discovery.type: zen
@@ -54,11 +75,14 @@ services:
     - VIRTUAL_PORT=5601
     - VIRTUAL_HOST=elk.kyump.com
 
-# volumes:
-#   # We'll define a volume that will store the data from the elasticsearch
-#   elastic-data:
-#     external:
-#       name: ${MACHINE_NAME}-volume
+  # We'll define a volume that will store the data from the elasticsearch
+volumes:
+  elastic-data-1:
+    external:
+      name: ${MACHINE_NAME}-data-1
+  elastic-data-2:
+    external:
+      name: ${MACHINE_NAME}-data-2
 
 networks:
   default:

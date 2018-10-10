@@ -34,7 +34,8 @@ echo "."
 echo ".."
 echo "..."
 echo "Create kronos volume to persist elasticsearch data"
-docker volume create $MACHINE_NAME-volume
+docker volume create $MACHINE_NAME-data-1
+docker volume create $MACHINE_NAME-data-2
 
 echo "."
 echo ".."

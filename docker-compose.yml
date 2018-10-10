@@ -1,33 +1,43 @@
-version: '2'
+version: '3.7'
 
 services:
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
+    restart: always
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
 
   elasticsearch:
     build:
       context: elasticsearch/
     volumes:
-      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      # - elastic-data:/usr/share/elasticsearch/data
+      - ${CONFIG_ROOT_FOLDER}/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "9200-9202:9200"
+      - "9300-9302:9300"
     environment:
-      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      # use 'zen' discovery plugin
+      discovery.type: zen
+      # use internal Docker round-robin DNS for unicast discovery
+      discovery.zen.ping.unicast.hosts: elasticsearch
+      ES_JAVA_OPTS: "-Xmx512m -Xms512m"
       ELASTIC_PASSWORD: changeme
-    networks:
-      - elk
 
   logstash:
     build:
       context: logstash/
     volumes:
-      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ${CONFIG_ROOT_FOLDER}/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ${CONFIG_ROOT_FOLDER}/logstash/pipeline:/usr/share/logstash/pipeline:ro
     ports:
       - "5000:5000"
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
-    networks:
-      - elk
     depends_on:
       - elasticsearch
 
@@ -35,15 +45,22 @@ services:
     build:
       context: kibana/
     volumes:
-      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - ${CONFIG_ROOT_FOLDER}/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
     ports:
       - "5601:5601"
-    networks:
-      - elk
     depends_on:
       - elasticsearch
+    environment:
+    - VIRTUAL_PORT=5601
+    - VIRTUAL_HOST=elk.kyump.com
+
+# volumes:
+#   # We'll define a volume that will store the data from the elasticsearch
+#   elastic-data:
+#     external:
+#       name: ${MACHINE_NAME}-volume
 
 networks:
-
-  elk:
-    driver: bridge
+  default:
+    external:
+      name: ${MACHINE_NAME}-network

@@ -2,15 +2,6 @@ version: '3.7'
 
 services:
 
-  nginx-proxy:
-    image: jwilder/nginx-proxy
-    container_name: nginx-proxy
-    restart: always
-    ports:
-      - 80:80
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-
   elasticsearch:
     build:
       context: elasticsearch/
@@ -61,6 +52,11 @@ services:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
     depends_on:
       - elasticsearch
+    environment:
+      VIRTUAL_HOST: logstash.kyump.com
+      VIRTUAL_PORT: 5000
+      LETSENCRYPT_HOST: logstash.kyump.com
+      LETSENCRYPT_EMAIL: g.bastianelli@kyump.com
 
   kibana:
     build:
@@ -72,8 +68,10 @@ services:
     depends_on:
       - elasticsearch
     environment:
-    - VIRTUAL_PORT=5601
-    - VIRTUAL_HOST=elk.kyump.com
+      VIRTUAL_HOST: elk.kyump.com
+      VIRTUAL_PORT: 5601
+      LETSENCRYPT_HOST: elk.kyump.com
+      LETSENCRYPT_EMAIL: g.bastianelli@kyump.com
 
   # We'll define a volume that will store the data from the elasticsearch
 volumes:

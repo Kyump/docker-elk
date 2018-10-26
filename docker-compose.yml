@@ -47,14 +47,14 @@ services:
       - ${CONFIG_ROOT_FOLDER}/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
       - ${CONFIG_ROOT_FOLDER}/logstash/pipeline:/usr/share/logstash/pipeline:ro
     ports:
-      - "5000:5000"
+      - "8080:8080"
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
     depends_on:
       - elasticsearch
     environment:
       VIRTUAL_HOST: logstash.kyump.com
-      VIRTUAL_PORT: 5000
+      VIRTUAL_PORT: 8080
       LETSENCRYPT_HOST: logstash.kyump.com
       LETSENCRYPT_EMAIL: g.bastianelli@kyump.com
 

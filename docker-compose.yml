@@ -1,56 +1,123 @@
-version: '2'
+version: '3.7'
 
 services:
 
-  elasticsearch:
+  es01:
+    container_name: es01
     build:
       context: elasticsearch/
       args:
         ELK_VERSION: $ELK_VERSION
-    volumes:
-      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "2"
+    environment:
+      - discovery.type=zen
+      - node.name=es01
+      - discovery.seed_hosts=es02
+      - cluster.initial_master_nodes=es01,es02
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xmx1024m -Xms1024m"
+      - ELASTIC_PASSWORD=changeme
     ports:
       - "9200:9200"
       - "9300:9300"
+    volumes:
+      - ${CONFIG_ROOT_FOLDER}/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - esdata01:/usr/share/elasticsearch/data
+
+  es02:
+    container_name: es02
+    build:
+      context: elasticsearch/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "2"
     environment:
-      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
-      ELASTIC_PASSWORD: changeme
-    networks:
-      - elk
+      - discovery.type=zen
+      - node.name=es02
+      - discovery.seed_hosts=es01
+      - cluster.initial_master_nodes=es01,es02
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xmx1024m -Xms1024m"
+      - ELASTIC_PASSWORD=changeme
+    ports:
+      - "9201:9200"
+      - "9301:9300"
+    volumes:
+      - ${CONFIG_ROOT_FOLDER}/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - esdata02:/usr/share/elasticsearch/data
 
   logstash:
+    container_name: logstash
+    depends_on:
+      - es01
+      - es02
     build:
       context: logstash/
       args:
         ELK_VERSION: $ELK_VERSION
-    volumes:
-      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "2"
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
     ports:
       - "5000:5000"
       - "9600:9600"
-    environment:
-      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
-    networks:
-      - elk
-    depends_on:
-      - elasticsearch
+    volumes:
+      - ${CONFIG_ROOT_FOLDER}/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ${CONFIG_ROOT_FOLDER}/logstash/pipeline:/usr/share/logstash/pipeline:ro
 
   kibana:
+    container_name: kibana
+    depends_on:
+      - es01
+      - es02
     build:
       context: kibana/
       args:
         ELK_VERSION: $ELK_VERSION
-    volumes:
-      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200k"
+        max-file: "2"
+    environment:
+      - VIRTUAL_HOST=elk.kyump.com
+      - VIRTUAL_PORT=5601
+      - LETSENCRYPT_HOST=elk.kyump.com
+      - LETSENCRYPT_EMAIL=g.bastianelli@kyump.com
     ports:
       - "5601:5601"
-    networks:
-      - elk
-    depends_on:
-      - elasticsearch
+    volumes:
+      - ${CONFIG_ROOT_FOLDER}/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+
+volumes:
+  esdata01:
+    driver: local
+  esdata02:
+    driver: local
 
 networks:
-
-  elk:
-    driver: bridge
+  default:
+    external:
+      name: ${MACHINE_NAME}-network

@@ -1,49 +1,88 @@
-version: '2'
+version: '3.7'
 
 services:
 
   elasticsearch:
     build:
       context: elasticsearch/
+    container_name: elasticsearch-1
     volumes:
-      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - elastic-data-1:/usr/share/elasticsearch/data
+      - ${CONFIG_ROOT_FOLDER}/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     ports:
       - "9200:9200"
       - "9300:9300"
     environment:
-      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      # use 'zen' discovery plugin
+      discovery.type: zen
+      # use internal Docker round-robin DNS for unicast discovery
+      discovery.zen.ping.unicast.hosts: elasticsearch
+      ES_JAVA_OPTS: "-Xmx512m -Xms512m"
       ELASTIC_PASSWORD: changeme
-    networks:
-      - elk
+
+  elasticsearch2:
+    build:
+      context: elasticsearch/
+    container_name: elasticsearch-2
+    depends_on:
+      - elasticsearch
+    volumes:
+      - elastic-data-2:/usr/share/elasticsearch/data
+      - ${CONFIG_ROOT_FOLDER}/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - "9201:9200"
+      - "9301:9300"
+    environment:
+      # use 'zen' discovery plugin
+      discovery.type: zen
+      # use internal Docker round-robin DNS for unicast discovery
+      discovery.zen.ping.unicast.hosts: elasticsearch
+      ES_JAVA_OPTS: "-Xmx512m -Xms512m"
+      ELASTIC_PASSWORD: changeme
 
   logstash:
     build:
       context: logstash/
     volumes:
-      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ${CONFIG_ROOT_FOLDER}/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ${CONFIG_ROOT_FOLDER}/logstash/pipeline:/usr/share/logstash/pipeline:ro
     ports:
-      - "5000:5000"
+      - "8080:8080"
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
-    networks:
-      - elk
     depends_on:
       - elasticsearch
+    environment:
+      VIRTUAL_HOST: logstash.kyump.com
+      VIRTUAL_PORT: 8080
+      LETSENCRYPT_HOST: logstash.kyump.com
+      LETSENCRYPT_EMAIL: g.bastianelli@kyump.com
 
   kibana:
     build:
       context: kibana/
     volumes:
-      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - ${CONFIG_ROOT_FOLDER}/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
     ports:
       - "5601:5601"
-    networks:
-      - elk
     depends_on:
       - elasticsearch
+    environment:
+      VIRTUAL_HOST: elk.kyump.com
+      VIRTUAL_PORT: 5601
+      LETSENCRYPT_HOST: elk.kyump.com
+      LETSENCRYPT_EMAIL: g.bastianelli@kyump.com
+
+  # We'll define a volume that will store the data from the elasticsearch
+volumes:
+  elastic-data-1:
+    external:
+      name: ${MACHINE_NAME}-data-1
+  elastic-data-2:
+    external:
+      name: ${MACHINE_NAME}-data-2
 
 networks:
-
-  elk:
-    driver: bridge
+  default:
+    external:
+      name: ${MACHINE_NAME}-network

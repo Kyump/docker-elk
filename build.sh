@@ -22,7 +22,6 @@ echo "Copy conf to the server"
 docker-machine scp  -r elasticsearch $MACHINE_NAME:.
 docker-machine scp  -r kibana $MACHINE_NAME:.
 docker-machine scp  -r logstash $MACHINE_NAME:.
-docker-machine scp  -r logstash $MACHINE_NAME:.
 
 echo "."
 echo ".."

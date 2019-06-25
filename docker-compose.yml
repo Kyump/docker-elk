@@ -5,6 +5,7 @@ services:
   elasticsearch:
     build:
       context: elasticsearch/
+    restart: always
     container_name: elasticsearch-1
     volumes:
       - elastic-data-1:/usr/share/elasticsearch/data
@@ -17,12 +18,13 @@ services:
       discovery.type: zen
       # use internal Docker round-robin DNS for unicast discovery
       discovery.zen.ping.unicast.hosts: elasticsearch
-      ES_JAVA_OPTS: "-Xmx512m -Xms512m"
-      ELASTIC_PASSWORD: changeme
+      ES_JAVA_OPTS: "-Xmx1024m -Xms1024m"
+      ELASTIC_PASSWORD: Ela2tic
 
   elasticsearch2:
     build:
       context: elasticsearch/
+    restart: always
     container_name: elasticsearch-2
     depends_on:
       - elasticsearch
@@ -37,12 +39,14 @@ services:
       discovery.type: zen
       # use internal Docker round-robin DNS for unicast discovery
       discovery.zen.ping.unicast.hosts: elasticsearch
-      ES_JAVA_OPTS: "-Xmx512m -Xms512m"
-      ELASTIC_PASSWORD: changeme
+      ES_JAVA_OPTS: "-Xmx1024m -Xms1024m"
+      ELASTIC_PASSWORD: Ela2tic
 
   logstash:
     build:
       context: logstash/
+    restart: always
+    container_name: logstash
     volumes:
       - ${CONFIG_ROOT_FOLDER}/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
       - ${CONFIG_ROOT_FOLDER}/logstash/pipeline:/usr/share/logstash/pipeline:ro
@@ -61,6 +65,8 @@ services:
   kibana:
     build:
       context: kibana/
+    restart: always
+    container_name: kibana
     volumes:
       - ${CONFIG_ROOT_FOLDER}/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
     ports:

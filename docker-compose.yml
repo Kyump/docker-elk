@@ -4,6 +4,7 @@ services:
 
   es01:
     container_name: es01
+    restart: unless-stopped
     build:
       context: elasticsearch/
       args:
@@ -35,6 +36,7 @@ services:
 
   es02:
     container_name: es02
+    restart: unless-stopped
     build:
       context: elasticsearch/
       args:
@@ -64,28 +66,28 @@ services:
       - ${CONFIG_ROOT_FOLDER}/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
       - esdata02:/usr/share/elasticsearch/data
 
-  logstash:
-    container_name: logstash
-    depends_on:
-      - es01
-      - es02
-    build:
-      context: logstash/
-      args:
-        ELK_VERSION: $ELK_VERSION
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "200k"
-        max-file: "2"
-    environment:
-      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
-    ports:
-      - "5000:5000"
-      - "9600:9600"
-    volumes:
-      - ${CONFIG_ROOT_FOLDER}/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-      - ${CONFIG_ROOT_FOLDER}/logstash/pipeline:/usr/share/logstash/pipeline:ro
+#  logstash:
+#    container_name: logstash
+#    depends_on:
+#      - es01
+#      - es02
+#    build:
+#      context: logstash/
+#      args:
+#        ELK_VERSION: $ELK_VERSION
+#    logging:
+#      driver: "json-file"
+#      options:
+#        max-size: "200k"
+#        max-file: "2"
+#    environment:
+#      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+#    ports:
+#      - "5000:5000"
+#      - "9600:9600"
+#    volumes:
+#      - ${CONFIG_ROOT_FOLDER}/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+#      - ${CONFIG_ROOT_FOLDER}/logstash/pipeline:/usr/share/logstash/pipeline:ro
 
   kibana:
     container_name: kibana

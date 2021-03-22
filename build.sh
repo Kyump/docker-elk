@@ -23,6 +23,8 @@ docker-machine scp  -r elasticsearch $MACHINE_NAME:.
 docker-machine scp  -r kibana $MACHINE_NAME:.
 docker-machine scp  -r logstash $MACHINE_NAME:.
 docker-machine scp  -r logstash $MACHINE_NAME:.
+docker-machine scp  -r -d nginx-conf $MACHINE_NAME:.
+
 
 echo "."
 echo ".."
